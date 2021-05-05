@@ -69,7 +69,11 @@
     </visual>
 
   </link>
-  
+
+  <gazebo reference="chassis">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+    
   <link name="left_wheel">
 	  
 	<collision name='left_wheel_collision'>
