@@ -16,16 +16,14 @@ void drive_robot(float lin_x, float ang_z)
     client.call(srv);    
 }
 
-void drive_to(int height, int width, int idx) {
+void drive_to(int width, int col) {
 	
-	const float VEL_LIN_X_FACTOR = 5.0, VEL_ANG_Z_FACTOR = 5.0;
-	
-	int col = idx % width;
+	const float VEL_LIN_X_FACTOR = 2.0, VEL_ANG_Z_FACTOR = 1.0;
 	
 	if(col < width / 3.0)
 			drive_robot(0, VEL_ANG_Z_FACTOR);
 	else if(col < width * 2.0 / 3.0)
-		drive_robot(0, -1.0 * VEL_ANG_Z_FACTOR);
+		drive_robot(VEL_LIN_X_FACTOR, 0);
 	else
 		drive_robot(0, -1.0 * VEL_ANG_Z_FACTOR);
 }
@@ -44,15 +42,24 @@ void process_image_callback(const sensor_msgs::Image img)
     // Then, identify if this pixel falls in the left, mid, or right side of the image
     // Depending on the white ball position, call the drive_bot function and pass velocities to it
     // Request a stop when there's no white ball seen by the camera
-    
-    int i = 0;
-    for (i = 0; i < img.height * img.step ; ++i) {
-			if (white_pixel == img.data[i]) {
-				drive_to(i, img.height, img.step);
-				break;
+        
+    int white_col_min = img.width, white_col_max = 0;
+    const int PIXEL_DEPTH = 3;
+    for (int i = 0; i < img.height * img.step ; i += PIXEL_DEPTH) {
+			if (white_pixel == img.data[i] && white_pixel == img.data[i + 1] && white_pixel == img.data[i + 2]) {
+				
+				int col = (i / PIXEL_DEPTH) % img.width;
+				
+				if(white_col_min > col)
+					white_col_min = col;
+				if(white_col_max < col)
+					white_col_max = col;
 			}
 		}
-		if( (img.height * img.step) <= i) //loop totally consumed; no white_point found 
+		
+		if( white_col_max > white_col_min) // white points found
+			drive_to(img.width, (white_col_max + white_col_min) / 2);
+		else
 			drive_stop();
 }
 
